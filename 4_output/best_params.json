@@ -1,0 +1,31 @@
+{
+  "FINAL_MODEL": "XGB",
+  "XGB": {
+    "n_estimators": 741,
+    "learning_rate": 0.014691495151176124,
+    "max_depth": 6,
+    "subsample": 0.8246054423397551,
+    "colsample_bytree": 0.6170762731121904,
+    "min_child_weight": 1,
+    "reg_alpha": 0.6213478443574787,
+    "reg_lambda": 0.9941387943895944
+  },
+  "CB": {
+    "iterations": 346,
+    "learning_rate": 0.06043200250227368,
+    "depth": 8,
+    "l2_leaf_reg": 7.253504820972977,
+    "bagging_temperature": 0.28990034381830254
+  },
+  "LGB": {
+    "num_leaves": 53,
+    "learning_rate": 0.020900794036503353,
+    "max_depth": 10,
+    "subsample": 0.9561142282400096,
+    "colsample_bytree": 0.6153017270690916,
+    "min_child_samples": 37,
+    "reg_alpha": 0.5390031006974475,
+    "reg_lambda": 2.7516071818457126,
+    "n_estimators": 632
+  }
+}

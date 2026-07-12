@@ -1,0 +1,2 @@
+모델,feature 수,Test RMSE,Test MAE,Test R²
+정형 Statcast 단독,59,0.0885,0.0705,0.0344

@@ -1,0 +1,22 @@
+{
+  "target": "y_whiff",
+  "label_boundary": {
+    "bad_le": 0.1667,
+    "good_ge": 0.245024
+  },
+  "n_train": 394,
+  "n_val": 146,
+  "n_test": 174,
+  "stat_val_auc": 0.6512328251458687,
+  "stat_test_auc": 0.5971348239389477,
+  "fuse_val_auc": 0.6613965744400527,
+  "video_auc_diff": -0.01049626701800599,
+  "video_auc_p": 0.00944629381405774,
+  "top_signals": [
+    "avg_speed_Fastball",
+    "std_speed_all",
+    "avg_spin_Fastball",
+    "prev_spin_Fastball",
+    "avg_pos_x_Breaking"
+  ]
+}

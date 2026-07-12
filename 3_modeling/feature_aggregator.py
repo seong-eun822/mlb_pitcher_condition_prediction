@@ -1,9 +1,16 @@
-"""
-X 구간별로 feature + Y 를 집계하는 모듈.
+"""정형 Statcast feature 집계 모듈 — X구간을 (mode, n)으로 바꿔가며 feature를 만든다.
 
-- 03_feature_engineering.ipynb의 로직을 함수화
-- starters_all.parquet + prev_season_lookup.parquet 로부터
-  (mode, n) 파라미터로 features_<mode><n>.parquet 생성
+`1_statcast/03_feature_engineering.ipynb`의 로직을 함수화한 것으로,
+06·07·14·15·16번 노트북이 import해서 쓴다.
+
+입력 : starters_all.parquet + prev_season_lookup.parquet
+출력 : features_<mode><n>.parquet  (1경기 = 1 row)
+
+X구간 mode: pitch(초반 n구) / inning(초반 n이닝) / batter(초반 n타자)
+  → 실험(06번) 결과 **pitch 15구**가 최선이라 이후 전 실험의 기본값.
+feature 종류: 구종3그룹(Fastball/Breaking/Offspeed)별 구속·회전수·릴리스·strike_ratio
+  + prev(직전시즌) / delta(오늘-직전시즌) / A(추세) / D(changepoint)
+  → 단, delta·A·D는 paired t-test에서 모두 효과 없는 것으로 판명(기각).
 """
 
 import os
@@ -85,7 +92,9 @@ def _aggregate_x_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
             AVG(release_spin_rate) AS avg_spin,
             AVG(release_extension) AS avg_ext,
             AVG(release_pos_x) AS avg_pos_x,
-            AVG(release_pos_z) AS avg_pos_z
+            AVG(release_pos_z) AS avg_pos_z,
+            STDDEV(release_pos_x) AS std_pos_x,
+            STDDEV(release_pos_z) AS std_pos_z
         FROM x_zone
         WHERE pitch_group != 'Other'
         GROUP BY game_pk, pitcher, season, pitch_group
@@ -114,13 +123,160 @@ def _aggregate_x_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     pivot = pitch_group_features.pivot_table(
         index=['game_pk', 'pitcher', 'season'],
         columns='pitch_group',
-        values=['avg_speed', 'std_speed', 'avg_spin', 'avg_ext', 'avg_pos_x', 'avg_pos_z'],
+        values=['avg_speed', 'std_speed', 'avg_spin', 'avg_ext',
+                'avg_pos_x', 'avg_pos_z', 'std_pos_x', 'std_pos_z'],
         aggfunc='first'
     )
     pivot.columns = [f'{v}_{g}' for v, g in pivot.columns]
     pivot = pivot.reset_index()
 
-    return game_features.merge(pivot, on=['game_pk', 'pitcher', 'season'], how='left')
+    features = game_features.merge(pivot, on=['game_pk', 'pitcher', 'season'], how='left')
+
+    # A. 경기 내 추세(전반 vs 후반 차이) feature 병합
+    trend = _aggregate_trend_features(con)
+    features = features.merge(trend, on=['game_pk', 'pitcher', 'season'], how='left')
+
+    # D. 경기 내 변화점(changepoint) feature 병합
+    cp = _aggregate_changepoint_features(con)
+    features = features.merge(cp, on=['game_pk', 'pitcher', 'season'], how='left')
+
+    return features
+
+
+# ── D. 경기 내 변화점(changepoint) feature 집계 ─────────────
+
+def _aggregate_changepoint_features(
+    con: duckdb.DuckDBPyConnection,
+    min_pitches: int = 6,
+    min_seg: int = 2,
+    drop_threshold: float = 0.0,
+) -> pd.DataFrame:
+    """X구간 내 구속·회전수 시계열에서 '변화점(change point)'을 탐지해 feature화.
+
+    A 추세(_aggregate_trend_features)가 구간을 '고정 절반(early/late)'으로 나눠
+    차이를 봤다면, 여기서는 분할 위치 자체를 데이터가 찾도록 한다.
+    15구 내외의 짧은 시퀀스라 ruptures 등 라이브러리 대신, 가능한 모든 분할점에서
+    전후 평균차(|late-early|)가 최대가 되는 지점을 1개 탐색하는 단순·설명가능 방식.
+
+    각 metric(speed/spin)에 대해 3개 feature:
+      - cp_{m}_detected : 변화점 존재 여부 (drop 크기가 임계 초과 시 1)
+      - cp_{m}_pos      : 변화점 위치(0~1 정규화, late 시작 인덱스 / 길이)
+      - cp_{m}_drop     : 전후 평균 차이 (late_mean - early_mean, 음수=후반 저하)
+
+    표본이 min_pitches 미만이거나 양쪽 세그먼트가 min_seg 미만이면 NaN → 모델이 흡수.
+    """
+    # 경기별 시간순 구속/회전수 시퀀스를 길게(long) 가져온다
+    seq = con.execute("""
+        SELECT game_pk, pitcher, season,
+               release_speed, release_spin_rate,
+               ROW_NUMBER() OVER (
+                   PARTITION BY game_pk, pitcher
+                   ORDER BY at_bat_number, pitch_number
+               ) AS rk
+        FROM x_zone
+        ORDER BY game_pk, pitcher, rk
+    """).df()
+
+    keys = ['game_pk', 'pitcher', 'season']
+    rows = []
+
+    for (gpk, pit, sea), g in seq.groupby(keys, sort=False):
+        row = {'game_pk': gpk, 'pitcher': pit, 'season': sea}
+        for metric, col in [('speed', 'release_speed'), ('spin', 'release_spin_rate')]:
+            vals = g[col].to_numpy(dtype='float64')
+            vals = vals[~np.isnan(vals)]
+            det, pos, drop = _best_changepoint(vals, min_pitches, min_seg, drop_threshold)
+            row[f'cp_{metric}_detected'] = det
+            row[f'cp_{metric}_pos'] = pos
+            row[f'cp_{metric}_drop'] = drop
+        rows.append(row)
+
+    cols = keys + [f'cp_{m}_{s}' for m in ('speed', 'spin')
+                   for s in ('detected', 'pos', 'drop')]
+    if not rows:
+        return pd.DataFrame(columns=cols)
+    return pd.DataFrame(rows)[cols]
+
+
+def _best_changepoint(vals, min_pitches, min_seg, drop_threshold):
+    """1차원 시퀀스에서 전후 평균차가 최대인 분할점 1개 탐색.
+
+    Returns (detected, pos, drop):
+      detected : |drop| > drop_threshold 면 1.0, 아니면 0.0 (표본부족 시 np.nan)
+      pos      : 변화점(late 시작) 위치를 0~1로 정규화 (표본부족 시 np.nan)
+      drop     : late_mean - early_mean (후반 저하면 음수)
+    """
+    n = len(vals)
+    if n < min_pitches:
+        return np.nan, np.nan, np.nan
+
+    best_split, best_absdiff, best_drop = None, -1.0, 0.0
+    # 분할점 i: early=vals[:i], late=vals[i:] (양쪽 모두 min_seg 이상)
+    for i in range(min_seg, n - min_seg + 1):
+        early_mean = vals[:i].mean()
+        late_mean = vals[i:].mean()
+        diff = late_mean - early_mean
+        if abs(diff) > best_absdiff:
+            best_absdiff, best_split, best_drop = abs(diff), i, diff
+
+    if best_split is None:
+        return np.nan, np.nan, np.nan
+
+    detected = 1.0 if best_absdiff > drop_threshold else 0.0
+    pos = best_split / n
+    return detected, pos, float(best_drop)
+
+
+# ── A. 경기 내 추세(전반/후반) feature 집계 ─────────────────
+
+def _aggregate_trend_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """X구간 내 투구를 시간순 전반/후반으로 나눠 구속·회전수의 후반-전반 차이 계산.
+
+    피로/컨디션 저하의 1차 지표(회전수·구속 저하)를 경기 단위로 포착.
+    - half: 구간 내 pitch_rank 기준 앞 절반=early, 뒤 절반=late
+    - 전체(all) + Fastball 그룹 각각에 대해 (late 평균 - early 평균)
+    - 표본이 너무 적으면(half당 2구 미만) NaN 처리 → 모델 내부에서 흡수
+    """
+    df = con.execute("""
+        WITH ranked AS (
+            SELECT game_pk, pitcher, season, pitch_group,
+                   release_speed, release_spin_rate,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY game_pk, pitcher
+                       ORDER BY at_bat_number, pitch_number
+                   ) AS rk,
+                   COUNT(*) OVER (PARTITION BY game_pk, pitcher) AS cnt
+            FROM x_zone
+        )
+        SELECT
+            game_pk, pitcher, season,
+            CASE WHEN rk <= cnt / 2.0 THEN 'early' ELSE 'late' END AS half,
+            AVG(release_speed)      AS avg_speed,
+            AVG(release_spin_rate)  AS avg_spin,
+            COUNT(*)                AS n
+        FROM ranked
+        GROUP BY game_pk, pitcher, season, half
+    """).df()
+
+    # all 그룹 추세
+    wide = df.pivot_table(
+        index=['game_pk', 'pitcher', 'season'],
+        columns='half',
+        values=['avg_speed', 'avg_spin', 'n'],
+        aggfunc='first',
+    )
+    wide.columns = [f'{v}_{h}' for v, h in wide.columns]
+    wide = wide.reset_index()
+
+    out = wide[['game_pk', 'pitcher', 'season']].copy()
+    enough = (wide.get('n_early', 0) >= 2) & (wide.get('n_late', 0) >= 2)
+    for metric in ['speed', 'spin']:
+        early = wide.get(f'avg_{metric}_early')
+        late = wide.get(f'avg_{metric}_late')
+        if early is not None and late is not None:
+            out[f'trend_{metric}_all'] = np.where(enough, late - early, np.nan)
+
+    return out
 
 
 # ── delta feature 병합 ──────────────────────────────────────

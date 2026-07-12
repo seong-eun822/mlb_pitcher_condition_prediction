@@ -1,0 +1,10 @@
+{
+  "agg_xgb_val_r2": 0.08,
+  "cnn_val_r2": 0.0612,
+  "agg_xgb_test_r2": 0.0258,
+  "cnn_test_r2": 0.0381,
+  "mean_diff": -0.0188,
+  "t_stat": -20.0989,
+  "p_value": 0.0,
+  "significant": true
+}
