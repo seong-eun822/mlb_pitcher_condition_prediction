@@ -1,10 +1,21 @@
-create_gantt.py
-
-# 대용량 데이터 파일
+# 대용량 데이터 (statcast parquet, 좌표 CSV 380개 등) — 드라이브에만
 0_data/
 
-# 모델 저장 파일
-4_output/*.pkl
+# 모델 저장 파일 (.pkl)
+4_output/**/*.pkl
+
+# 내부 작업 문서 (Claude 참고용, 로컬 전용)
+CLAUDE.md
+00_로컬_드라이브_대조표.md
+
+# 발표/간트 스크립트
+90_기획/create_gantt.py
+
+# 참고논문 PDF 원본 (54MB, 저작권) — 요약 md는 유지
+98_참고논문/PDF/
+
+# 미채택 탐색 기록 (초기 작업본·손가락검출 비교)
+99_참고자료/
 
 # 파이썬 캐시
 __pycache__/

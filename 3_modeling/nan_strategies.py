@@ -1,3 +1,11 @@
+"""결측(NaN) 처리 전략 비교 실험 — `05_nan_experiment.ipynb`에서 import해 사용.
+
+배경: delta feature는 "직전 시즌 대비 변화량"이라, 해당 구종을 안 던진 경기엔 NaN이 생긴다.
+      이 NaN을 어떻게 다룰지(그대로 두기 / 0 대체 / 컬럼 삭제)에 따라 성능이 갈리는지 5가지로 비교.
+
+결론: baseline(모델 내부 처리에 맡김)이 최선 → 별도 결측 처리 안 함.
+"""
+
 import os
 import pandas as pd
 import numpy as np
@@ -126,6 +134,7 @@ EXPERIMENTS = [
 
 
 def run_all(feature_path: str) -> pd.DataFrame:
+    """EXPERIMENTS의 5가지 결측 전략을 모두 실행해 성능 비교표를 반환."""
     records = []
     for name, offspeed_zero, drop_threshold in EXPERIMENTS:
         print(f'[{name}] 실행 중...')
@@ -138,8 +147,8 @@ def run_all(feature_path: str) -> pd.DataFrame:
 
 
 if __name__ == '__main__':
-    DRIVE       = '/content/drive/MyDrive/투수 컨디션 예측 ML'
-    FEAT_PATH   = os.path.join(DRIVE, '0_data', '4_features', 'features_batter9.parquet')
+    DRIVE       = '/content/drive/MyDrive/MLB_pitcher'
+    FEAT_PATH   = os.path.join(DRIVE, 'data', '4_features', 'features_batter9.parquet')
     summary     = run_all(FEAT_PATH)
     print('\n=== 결과 요약 ===')
     cols = ['name', 'n_features',

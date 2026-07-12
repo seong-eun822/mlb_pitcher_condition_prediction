@@ -17,7 +17,116 @@ NaN 처리 전략 비교 (05)
 X 구간 실험 (06)  →  pitch15 확정
     ↓
 Delta Feature 기여도 검증 (07)  →  paired t-test ✅
+    ↓
+이상치 처리 실험 (09)  →  E4-1 baseline 확정
+    ↓
+도메인 feature 확장 (14: A 추세 + B 릴리스 변동성)  →  paired t-test 예정
+    ↓
+시퀀스 모델 (15: 1D-CNN vs aggregate XGB)  →  paired t-test 예정
 ```
+
+---
+
+## 15. 시퀀스 모델 실험 (Phase 11 — 1D-CNN, 로드맵 C)
+
+**파일**: `3_modeling/15_sequence_model_experiment.ipynb`  
+**근거**: KBO 1D-CNN 헛스윙 예측 (Y 동일 계열). aggregate tree baseline vs 시퀀스 DL 비교 = 로드맵 "발전시킨 것" 본체.  
+**목적**: 15구를 평균낸 정적 feature 대신 **pitch-by-pitch 원본 시퀀스**를 1D-CNN에 투입해, 투구 순서 정보가 예측력을 높이는지 검증.
+
+### 설계
+
+- 입력: 경기당 처음 15구 × 구별 feature 5종(`release_speed/spin_rate/pos_x/pos_z/extension`) → `(경기수, 15, 5)` 텐서. 15구 미만 0패딩, 결측 0대체, train 통계로 정규화(leakage 방지).
+- 모델: 1D-CNN (Conv1d 2층 → AdaptiveAvgPool → FC), early stopping.
+- 비교 대상: 동일 모집단·동일 split의 aggregate XGB.
+- Y: `y_whiff` (회귀, 동일).
+
+### 실험
+
+| 실험 | 내용 | 비교 |
+|---|---|---|
+| E9-1 | Aggregate XGB (기준) | 정적 feature |
+| E9-2 | 1D-CNN (제안) | 시퀀스 원본 |
+| 🔬 E9-3 | XGB vs CNN **paired t-test** (n=30 seeds) | 시퀀스 모델 우열 검증 |
+
+> ⚠ Colab GPU 권장(런타임 유형 → T4). 14번과 독립 실행 가능(원본 pitch 시퀀스 사용). 시간 부족 시 N_SEEDS=10으로 축소 가능.
+> 출력: `sequence_model_ttest_seeds.csv`, `sequence_model_results.json`, `sequence_model_ttest.png`
+
+---
+
+## 14. 도메인 Feature 확장 (Phase 6.5 — A 추세 + B 릴리스 변동성)
+
+**파일**: `3_modeling/feature_aggregator.py` (집계 함수), 실험 노트북 예정  
+**근거 논문**: 98_참고논문 — Paripex(회전수 저하=피로 1차 지표), Frontiers(수평 릴리스 변동성 ↔ 삼진 최강 상관)  
+**목적**: 15구 정적 평균만 쓰던 X feature에 (A)경기 내 추세와 (B)릴리스 포인트 변동성을 추가해 "현재 상태(state)" 신호를 강화. SHAP에서 절대값이 delta를 압도하던 한계(08) 보완 시도.
+
+### 추가된 feature (8개)
+
+| 구분 | feature | 정의 |
+|---|---|---|
+| **B 변동성** | `std_pos_x_{Fastball/Breaking/Offspeed}` | X구간 내 수평 릴리스 표준편차 (구종 그룹별) |
+| **B 변동성** | `std_pos_z_{Fastball/Breaking/Offspeed}` | 수직 릴리스 표준편차 |
+| **A 추세** | `trend_speed_all` | (후반 절반 평균 구속 − 전반 절반 평균 구속) |
+| **A 추세** | `trend_spin_all` | (후반 절반 평균 회전수 − 전반 절반 평균 회전수) |
+
+- A는 X구간(pitch15) 내 투구를 시간순 전반/후반으로 양분 → late−early. half당 2구 미만이면 NaN.
+- 구현 위치: `_aggregate_x_features`(B는 그룹 집계에 STDDEV 추가), `_aggregate_trend_features`(A 신규 함수).
+
+### 검증 데이터 (raw 2024 샘플 30만구)
+
+| feature | 결측률 | 평균 | 해석 |
+|---|---|---|---|
+| `std_pos_x_Fastball` | 14.6% | 0.117 | 정상 (Breaking/Offspeed는 미등판 시 NaN) |
+| `trend_speed_all` | 14.2% | **−0.11 mph** | 후반 구속 소폭 저하 — 일반적 피로 패턴 포착됨 |
+| `trend_spin_all` | 14.6% | +1.7 rpm | 정상 범위 |
+
+### 다음 단계 (예정 실험)
+
+| 실험 | 내용 | 비교 기준 |
+|---|---|---|
+| E8-1 | 정형 기존 59 feature (Phase 8 최종) | 기준 |
+| E8-2 | + B 릴리스 변동성 (6개) | E8-1 vs E8-2 |
+| E8-3 | + A 추세 (2개) | E8-2 vs E8-3 |
+| 🔬 E8-4 | E8-1 vs E8-3 (전체) **paired t-test** (n=30 seeds) | **도메인 feature 기여도 검증** |
+| E8-5 | SHAP으로 추세/변동성 feature 순위 확인 | delta보다 상위로 올라오는지 |
+
+> ⚠ 실행은 Colab(Drive: `투수 컨디션 예측 ML`)에서. `features_pitch15.parquet`를 재생성(overwrite=True)해야 새 컬럼 반영됨.
+
+---
+
+## 09. 이상치 처리 실험 (Phase 6)
+
+**파일**: `3_modeling/09_outlier_experiment.ipynb`  
+**출력**: `4_output/outlier_experiment_results.csv`  
+**목적**: X feature 구속 clip / Y 극단값 제거가 예측 성능에 영향을 주는지 비교
+
+### 배경
+- Y EDA 결과: whiff% = 0.0인 경기 101개(0.4%), > 0.60인 경기 7개
+- X feature: 구속(speed) 관련 컬럼 상하 1% clip 효과 검증
+
+### 시도한 전략
+
+| 실험 | 내용 | 제거 샘플 |
+|---|---|---|
+| E4-1 | 없음 (베이스라인) | 0 |
+| E4-2 | X 구속 feature 상하 1% clip | 0 |
+| E4-3 | Y 극단값 제거 (whiff% < 0.05 or > 0.60) | 328 |
+| E4-4 | E4-2 + E4-3 조합 | 328 |
+
+### 결과
+
+| 실험 | XGB Val RMSE | XGB Val R² | CB Val RMSE | CB Val R² | LGB Val RMSE | LGB Val R² |
+|---|---|---|---|---|---|---|
+| E4-1 baseline | 0.0851 | **0.0824** | 0.0849 | 0.0861 | 0.0850 | 0.0835 |
+| E4-2 clip_speed | 0.0851 | 0.0812 | 0.0848 | **0.0874** | 0.0851 | 0.0816 |
+| E4-3 remove_y | **0.0821** | 0.0782 | **0.0818** | 0.0856 | **0.0821** | 0.0798 |
+| E4-4 clip+remove | 0.0822 | 0.0772 | 0.0819 | 0.0843 | 0.0821 | 0.0781 |
+
+### 결론
+- **RMSE 기준**: E4-3이 가장 낮음 (0.0821) — 단, Y 분산 자체가 줄어든 효과
+- **R² 기준**: E4-1 baseline이 XGB 최고(0.0824), E4-2가 CB 최고(0.0874)
+- Y 극단값 제거(E4-3, E4-4)는 RMSE는 개선되나 R²가 오히려 감소 → 단순 분산 압축 효과이며 실제 예측력 향상이 아님
+- **→ E4-1 baseline 확정**: R² 기준 가장 균형 잡힌 성능, 데이터 손실 없음
+- **이후 실험(Phase 7 튜닝)은 E4-1 기준으로 진행**
 
 ---
 
