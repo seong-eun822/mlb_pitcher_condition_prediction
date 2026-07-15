@@ -115,8 +115,8 @@ Statcast는 구속·회전수 같은 "공의 결과"는 정밀하게 담지만, 
 "오늘 폼이 무너졌다"는 감각을 데이터로 잡아낼 수 있지 않을까 — 라는 가설로, 투구 영상에서 직접 관절 좌표를 추출하는 파이프라인을 처음부터 설계했습니다.
 
 <p float="left">
-  <img src="2_video/image/01_skeleton_release_example.png" width="380">
-  <img src="2_video/image/02_skeleton_release_example.png" width="380">
+  <img src="2_video/image/01_release_detection_home.png" width="380">
+  <img src="2_video/image/02_release_detection_away.png" width="380">
 </p>
 
 > 실제 중계 영상에서 투수를 검출(노란 박스)하고, MediaPipe로 상반신 관절(초록 스켈레톤)을 추출해 릴리스 순간(빨간 점)을 특정한 결과.
