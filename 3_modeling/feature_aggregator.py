@@ -1,16 +1,19 @@
-"""정형 Statcast feature 집계 모듈 — X구간을 (mode, n)으로 바꿔가며 feature를 만든다.
+"""정형 Statcast feature 집계 모듈.
 
-`1_statcast/03_feature_engineering.ipynb`의 로직을 함수화한 것으로,
-06·07·14·15·16번 노트북이 import해서 쓴다.
+경기 초반 X구간(mode, n)의 투구를 1경기=1행으로 집계해 feature를 생성한다.
 
 입력 : starters_all.parquet + prev_season_lookup.parquet
-출력 : features_<mode><n>.parquet  (1경기 = 1 row)
+출력 : features_<mode><n>.parquet
 
 X구간 mode: pitch(초반 n구) / inning(초반 n이닝) / batter(초반 n타자)
-  → 실험(06번) 결과 **pitch 15구**가 최선이라 이후 전 실험의 기본값.
-feature 종류: 구종3그룹(Fastball/Breaking/Offspeed)별 구속·회전수·릴리스·strike_ratio
-  + prev(직전시즌) / delta(오늘-직전시즌) / A(추세) / D(changepoint)
-  → 단, delta·A·D는 paired t-test에서 모두 효과 없는 것으로 판명(기각).
+
+feature 계열:
+  _aggregate_x_features        구종3그룹별 구속·회전수·릴리스·strike_ratio
+  _merge_delta                 직전시즌 값 + (오늘-직전시즌) 편차
+  _aggregate_trend_features    경기 내 전반/후반 구속·회전수 차이
+  _aggregate_changepoint_features  경기 내 변화점 탐지
+  _aggregate_acwr_features     최근 투구량(급성:만성 부하)
+  _aggregate_movement_features 무브먼트(pfx)·회전축·제구
 """
 
 import os
@@ -80,7 +83,10 @@ def _x_zone_sql(mode: str, n: int) -> str:
 # ── X feature 집계 ──────────────────────────────────────────
 
 def _aggregate_x_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    """x_zone 뷰로부터 경기 단위 feature DataFrame을 생성."""
+    """x_zone 뷰로부터 경기 단위 feature DataFrame을 생성.
+
+    구종그룹별 기본 통계(구속/회전수/릴리스/strike_ratio)에 추세·변화점을 병합한다.
+    """
 
     # 구종 그룹별 집계
     pitch_group_features = con.execute("""
@@ -153,10 +159,9 @@ def _aggregate_changepoint_features(
 ) -> pd.DataFrame:
     """X구간 내 구속·회전수 시계열에서 '변화점(change point)'을 탐지해 feature화.
 
-    A 추세(_aggregate_trend_features)가 구간을 '고정 절반(early/late)'으로 나눠
-    차이를 봤다면, 여기서는 분할 위치 자체를 데이터가 찾도록 한다.
-    15구 내외의 짧은 시퀀스라 ruptures 등 라이브러리 대신, 가능한 모든 분할점에서
-    전후 평균차(|late-early|)가 최대가 되는 지점을 1개 탐색하는 단순·설명가능 방식.
+    고정 절반(early/late) 분할과 달리 분할 위치 자체를 데이터가 찾는다.
+    짧은 시퀀스(15구 내외)라 가능한 모든 분할점에서 전후 평균차(|late-early|)가
+    최대인 지점 1개를 탐색하는 단순·설명가능 방식.
 
     각 metric(speed/spin)에 대해 3개 feature:
       - cp_{m}_detected : 변화점 존재 여부 (drop 크기가 임계 초과 시 1)
@@ -330,6 +335,120 @@ def _merge_delta(features: pd.DataFrame, lookup: pd.DataFrame) -> pd.DataFrame:
     return features
 
 
+# ── E. ACWR(급성:만성 투구량 비율) feature 집계 ──────────────
+
+def _aggregate_acwr_features(
+    con: duckdb.DuckDBPyConnection,
+    acute_days: int = 7,
+    chronic_days: int = 28,
+    min_chronic_pitches: int = 4,
+) -> pd.DataFrame:
+    """경기 날짜(game_date) 기준, '오늘 이전' 누적 투구량으로 ACWR feature 계산.
+
+    - acute_load  : 오늘 이전 acute_days(기본 7일)간 던진 총 투구수
+    - chronic_load: 오늘 이전 chronic_days(기본 28일)간 총 투구수 / (chronic_days/7) → 주당 평균
+    - acwr        : acute_load / chronic_load
+
+    starters 테이블에 game_date 컬럼이 있다고 가정(없으면 NaN으로 채워 반환).
+    각 경기 자신의 투구수는 acute/chronic 계산에서 제외(오늘 이전 데이터만 사용) → 누수 방지.
+    """
+    cols = con.execute("PRAGMA table_info(starters)").df()['name'].tolist()
+    keys = ['game_pk', 'pitcher', 'season']
+    out_cols = keys + ['acute_load', 'chronic_load', 'acwr']
+
+    if 'game_date' not in cols:
+        empty = con.execute("SELECT DISTINCT game_pk, pitcher, season FROM starters").df()
+        for c in ['acute_load', 'chronic_load', 'acwr']:
+            empty[c] = np.nan
+        return empty[out_cols]
+
+    game_counts = con.execute("""
+        SELECT game_pk, pitcher, season, MIN(game_date) AS game_date, COUNT(*) AS n_pitches_game
+        FROM starters
+        GROUP BY game_pk, pitcher, season
+    """).df()
+    game_counts['game_date'] = pd.to_datetime(game_counts['game_date'])
+    game_counts = game_counts.sort_values(['pitcher', 'game_date']).reset_index(drop=True)
+
+    rows = []
+    for pid, g in game_counts.groupby('pitcher', sort=False):
+        g = g.sort_values('game_date').reset_index(drop=True)
+        dates = g['game_date'].values
+        pitches = g['n_pitches_game'].values
+        n = len(g)
+        for i in range(n):
+            today = dates[i]
+            past_mask = dates < today
+            if not past_mask.any():
+                rows.append((g.loc[i, 'game_pk'], pid, g.loc[i, 'season'], np.nan, np.nan, np.nan))
+                continue
+            past_dates = dates[past_mask]
+            past_pitches = pitches[past_mask]
+
+            acute = past_pitches[past_dates >= today - np.timedelta64(acute_days, 'D')].sum()
+            chronic_sum = past_pitches[past_dates >= today - np.timedelta64(chronic_days, 'D')].sum()
+            chronic = chronic_sum / (chronic_days / 7)
+
+            if chronic < min_chronic_pitches:
+                acute, chronic, acwr = np.nan, np.nan, np.nan
+            else:
+                acwr = acute / chronic if chronic > 0 else np.nan
+
+            rows.append((g.loc[i, 'game_pk'], pid, g.loc[i, 'season'], acute, chronic, acwr))
+
+    return pd.DataFrame(rows, columns=out_cols)
+
+
+# ── F. 무브먼트 / 회전축 / 제구 feature 집계 ──────────────
+
+def _aggregate_movement_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """x_zone(X구간) 기준, 구종그룹별 무브먼트/회전축 + 무브먼트 gap + 경기 단위 로케이션 흩어짐.
+
+    - pfx_x_<group>, pfx_z_<group> : 구종그룹별 좌우/상하 무브먼트 평균
+    - spin_sin_<group>, spin_cos_<group> : 회전축(도)을 sin/cos로 분해한 평균(원형변수 처리)
+    - pfx_gap_{x,z}_FB_BR / _FB_OFF : 직구−변화구 / 직구−오프스피드 무브먼트 차이
+    - x_plate_loc_std : (STDDEV(plate_x) + STDDEV(plate_z)) / 2  — 로케이션 흩어짐(제구 안정성)
+
+    모두 X구간 내 정보만 사용 → Y구간과 분리(누수 방지).
+    """
+    keys = ['game_pk', 'pitcher', 'season']
+
+    # 구종그룹별 무브먼트/회전축 (spin_axis는 도 → radian → sin/cos 평균)
+    grp = con.execute("""
+        SELECT game_pk, pitcher, season, pitch_group,
+               AVG(pfx_x) AS pfx_x,
+               AVG(pfx_z) AS pfx_z,
+               AVG(SIN(spin_axis * PI() / 180.0)) AS spin_sin,
+               AVG(COS(spin_axis * PI() / 180.0)) AS spin_cos
+        FROM x_zone
+        WHERE pitch_group != 'Other'
+        GROUP BY game_pk, pitcher, season, pitch_group
+    """).df()
+
+    move = grp.pivot_table(index=keys, columns='pitch_group',
+                            values=['pfx_x', 'pfx_z', 'spin_sin', 'spin_cos'])
+    move.columns = [f'{stat}_{group}' for stat, group in move.columns]
+    move = move.reset_index()
+
+    # 무브먼트 gap (직구 − 변화구/오프스피드) — 구종 간 궤적 대비
+    for ax in ['x', 'z']:
+        fb = f'pfx_{ax}_Fastball'
+        if fb in move.columns and f'pfx_{ax}_Breaking' in move.columns:
+            move[f'pfx_gap_{ax}_FB_BR'] = move[fb] - move[f'pfx_{ax}_Breaking']
+        if fb in move.columns and f'pfx_{ax}_Offspeed' in move.columns:
+            move[f'pfx_gap_{ax}_FB_OFF'] = move[fb] - move[f'pfx_{ax}_Offspeed']
+
+    # 경기 단위 로케이션 흩어짐
+    loc = con.execute("""
+        SELECT game_pk, pitcher, season,
+               (STDDEV(plate_x) + STDDEV(plate_z)) / 2.0 AS x_plate_loc_std
+        FROM x_zone
+        GROUP BY game_pk, pitcher, season
+    """).df()
+
+    return move.merge(loc, on=keys, how='outer')
+
+
 # ── Y 구간 wOBA 계산 ────────────────────────────────────────
 
 def _calc_y(con: duckdb.DuckDBPyConnection, mode: str, n: int, min_swings: int = 20) -> pd.DataFrame:
@@ -400,13 +519,16 @@ def build_features(
     db_path: str = ':memory:',
     min_y_ab: int = 5,
     include_delta: bool = True,
+    include_acwr: bool = True,
+    include_movement: bool = True,
 ) -> pd.DataFrame:
     """주어진 (mode, n) X구간에 대해 features + Y 데이터셋 생성.
 
     Parameters
     ----------
-    include_delta : delta feature(직전 시즌 대비 편차) 포함 여부.
-                   False이면 절대값 feature만 사용 (paired t-test 비교용).
+    include_delta    : delta feature(직전 시즌 대비 편차) 포함 여부.
+    include_acwr     : ACWR(최근 투구량) feature 포함 여부.
+    include_movement : 무브먼트/회전축/제구 feature 포함 여부.
 
     Returns
     -------
@@ -432,6 +554,16 @@ def build_features(
         lookup = pd.read_parquet(lookup_path)
         features = _merge_delta(features, lookup)
 
+    # E. ACWR(최근 투구량) feature 병합 — 경기 전 이력 기준, X구간과 무관
+    if include_acwr:
+        acwr = _aggregate_acwr_features(con)
+        features = features.merge(acwr, on=['game_pk', 'pitcher', 'season'], how='left')
+
+    # F. 무브먼트/회전축/제구 feature 병합 — X구간 기준
+    if include_movement:
+        movement = _aggregate_movement_features(con)
+        features = features.merge(movement, on=['game_pk', 'pitcher', 'season'], how='left')
+
     # Y 계산
     y_df = _calc_y(con, mode, n, min_swings=min_y_ab)
 
@@ -454,6 +586,8 @@ def build_and_save(
     n: int,
     overwrite: bool = False,
     include_delta: bool = True,
+    include_acwr: bool = True,
+    include_movement: bool = True,
 ) -> str:
     """build_features 결과를 features_<mode><n>.parquet 로 저장."""
     suffix = '' if include_delta else '_nodelta'
@@ -462,7 +596,9 @@ def build_and_save(
         print(f'[skip] 이미 존재: {out_path}')
         return out_path
 
-    df = build_features(starters_path, lookup_path, mode, n, include_delta=include_delta)
+    df = build_features(starters_path, lookup_path, mode, n,
+                         include_delta=include_delta, include_acwr=include_acwr,
+                         include_movement=include_movement)
     df.to_parquet(out_path, index=False)
     print(f'[saved] {out_path}  ({len(df):,}행, {len(df.columns)}컬럼)')
     return out_path

@@ -1,12 +1,20 @@
 # 대용량 데이터 (statcast parquet, 좌표 CSV 380개 등) — 드라이브에만
 0_data/
 
+# 루트의 데이터/feature parquet (대용량, 드라이브에만 — starters_all은 267MB)
+*.parquet
+
 # 모델 저장 파일 (.pkl)
 4_output/**/*.pkl
 
 # 내부 작업 문서 (Claude 참고용, 로컬 전용)
 CLAUDE.md
 00_로컬_드라이브_대조표.md
+00_노트북_지도.md
+MLB_pitcher_condition_prediction.md
+
+# 일정 관리 (포폴 무관)
+90_기획/MLB_pitcher_project_gantt.xlsx
 
 # 발표/간트 스크립트
 90_기획/create_gantt.py
@@ -16,6 +24,13 @@ CLAUDE.md
 
 # 미채택 탐색 기록 (초기 작업본·손가락검출 비교)
 99_참고자료/
+
+# 면접용 자료 (로컬 전용)
+_면접자료/
+
+# 실험 산출물 (버전별 모델/parquet — 대용량, 로컬 전용)
+v3_output/
+v4_output/
 
 # 파이썬 캐시
 __pycache__/

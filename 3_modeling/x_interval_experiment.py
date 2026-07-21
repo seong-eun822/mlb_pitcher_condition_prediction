@@ -1,13 +1,8 @@
-"""X구간 실험 (E3) — `06_x_interval.ipynb`에서 import해 사용.
+"""X구간 실험 — 경기 초반을 어디까지 봐야 이후 whiff%를 가장 잘 맞추나.
 
-질문: "경기 초반을 **어디까지** 봐야 이후 whiff%를 가장 잘 맞추나?"
-      pitch(n구) / inning(n이닝) / batter(n타자) × n 조합 8가지를 학습·비교.
-
-흐름: feature_aggregator.build_and_save로 구간별 parquet 생성
-      → 각각 XGBoost / CatBoost / LightGBM 학습 → val 성능 비교.
-
-결론: **pitch 15구**가 최선 → 이후 모든 실험의 X구간 기본값이 됨.
-      (너무 적으면 표본 부족, 너무 많으면 Y구간이 줄어 타겟이 불안정)
+pitch(n구) / inning(n이닝) / batter(n타자) × n 조합 8가지를 학습·비교한다.
+feature_aggregator.build_and_save로 구간별 parquet를 만들고, 각각
+XGBoost / CatBoost / LightGBM으로 학습해 val 성능을 비교한다.
 """
 
 import os
@@ -24,14 +19,14 @@ from feature_aggregator import build_and_save
 
 EXPERIMENTS = [
     # (mode,    n,  label)
-    ('pitch',  10, 'E3-1 pitch10'),
-    ('pitch',  15, 'E3-2 pitch15'),
-    ('pitch',  20, 'E3-3 pitch20'),
-    ('inning',  1, 'E3-4 inning1'),
-    ('inning',  2, 'E3-5 inning2'),
-    ('batter',  3, 'E3-6 batter3'),
-    ('batter',  6, 'E3-7 batter6'),
-    ('batter',  9, 'E3-8 batter9 (baseline)'),
+    ('pitch',  10, 'pitch10'),
+    ('pitch',  15, 'pitch15'),
+    ('pitch',  20, 'pitch20'),
+    ('inning',  1, 'inning1'),
+    ('inning',  2, 'inning2'),
+    ('batter',  3, 'batter3'),
+    ('batter',  6, 'batter6'),
+    ('batter',  9, 'batter9'),
 ]
 
 
