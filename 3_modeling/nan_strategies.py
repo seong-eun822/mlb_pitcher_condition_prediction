@@ -1,9 +1,7 @@
-"""결측(NaN) 처리 전략 비교 실험 — `05_nan_experiment.ipynb`에서 import해 사용.
+"""결측(NaN) 처리 전략 비교 실험.
 
-배경: delta feature는 "직전 시즌 대비 변화량"이라, 해당 구종을 안 던진 경기엔 NaN이 생긴다.
-      이 NaN을 어떻게 다룰지(그대로 두기 / 0 대체 / 컬럼 삭제)에 따라 성능이 갈리는지 5가지로 비교.
-
-결론: baseline(모델 내부 처리에 맡김)이 최선 → 별도 결측 처리 안 함.
+delta feature는 해당 구종을 안 던진 경기에 NaN이 생긴다. 이 NaN을
+어떻게 다룰지(그대로 두기 / 0 대체 / 컬럼 삭제)에 따른 성능을 비교한다.
 """
 
 import os
@@ -17,9 +15,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 # ── 결측 처리 함수들 ────────────────────────────────────────
 
 def impute_offspeed_zero(df: pd.DataFrame) -> pd.DataFrame:
-    """E2-2: 미등판 구종(Offspeed/Breaking) delta → 0 impute.
+    """미등판 구종(Offspeed/Breaking) delta → 0 impute.
     안 던졌으면 직전 시즌 대비 변화 없음(0)으로 간주.
-    2021처럼 기준값 자체가 없는 경우(prev_* NaN)는 그대로 NaN 유지.
+    기준값 자체가 없는 경우(prev_* NaN)는 그대로 NaN 유지.
     """
     df = df.copy()
     delta_cols = [c for c in df.columns if c.startswith('delta_')]
@@ -36,7 +34,7 @@ def impute_offspeed_zero(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_cols_by_nan(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
-    """E2-3/E2-4: NaN 비율이 threshold 이상인 컬럼 제거."""
+    """NaN 비율이 threshold 이상인 컬럼 제거."""
     df = df.copy()
     meta = ['game_pk', 'pitcher', 'season', 'y_woba']
     drop_cols = [
@@ -125,11 +123,11 @@ def run_experiment(
 
 EXPERIMENTS = [
     # (name,          offspeed_zero, drop_threshold)
-    ('E2-1 baseline', False,         None),
-    ('E2-2 zero',     True,          None),
-    ('E2-3 drop50',   False,         0.5),
-    ('E2-4 drop30',   False,         0.3),
-    ('E2-5 zero+drop50', True,       0.5),
+    ('baseline',      False,         None),
+    ('zero',          True,          None),
+    ('drop50',        False,         0.5),
+    ('drop30',        False,         0.3),
+    ('zero+drop50',   True,          0.5),
 ]
 
 

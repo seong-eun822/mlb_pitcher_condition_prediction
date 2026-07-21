@@ -1,16 +1,12 @@
-"""이상치 처리 전략 비교 실험 — `09_outlier_experiment.ipynb`에서 import해 사용.
+"""이상치 처리 전략 비교 실험.
 
-배경: 구속 X feature에 극단값이, whiff% 타겟에도 비현실적 값(0.05 미만 / 0.60 초과)이 섞여 있다.
-      이를 잘라내면(clip / 행 제거) 예측이 나아지는지 4가지로 비교.
+구속 X feature의 극단값, whiff% 타겟의 비현실적 값(0.05 미만 / 0.60 초과)을
+잘라내면(clip / 행 제거) 예측이 나아지는지 4가지로 비교한다.
 
-| 실험 | 처리 |
-|------|------|
-| E4-1 | 없음 (베이스라인) |
-| E4-2 | X 구속 feature 상하 1% clip |
-| E4-3 | Y 극단값 경기 제거 (whiff% < 0.05 or > 0.60) |
-| E4-4 | E4-2 + E4-3 조합 |
-
-결론: baseline(처리 안 함)이 최선 → 이상치 제거는 오히려 정보 손실. 별도 처리 안 함.
+  baseline     처리 없음
+  clip_speed   X 구속 feature 상하 1% clip
+  remove_y     Y 극단값 경기 제거 (whiff% < 0.05 or > 0.60)
+  clip+remove  둘 조합
 """
 
 import os
@@ -33,7 +29,7 @@ SPEED_COLS = [
 # ── 이상치 처리 함수들 ───────────────────────────────────────
 
 def clip_speed(df: pd.DataFrame, q_lo: float = 0.01, q_hi: float = 0.99) -> pd.DataFrame:
-    """E4-2: 구속 관련 X feature 상하 q% clip."""
+    """구속 관련 X feature 상하 q% clip."""
     df = df.copy()
     for col in SPEED_COLS:
         if col not in df.columns:
@@ -45,7 +41,7 @@ def clip_speed(df: pd.DataFrame, q_lo: float = 0.01, q_hi: float = 0.99) -> pd.D
 
 
 def remove_y_outlier(df: pd.DataFrame, lo: float = 0.05, hi: float = 0.60) -> pd.DataFrame:
-    """E4-3: whiff% 극단값 경기 제거 (EDA 기반 기준)."""
+    """whiff% 극단값 경기 제거 (EDA 기반 기준)."""
     mask = (df['y_whiff'] >= lo) & (df['y_whiff'] <= hi)
     return df[mask].copy()
 
@@ -141,10 +137,10 @@ def run_experiment(
 
 EXPERIMENTS = [
     # (name,          clip_speed, remove_y)
-    ('E4-1 baseline', False,      False),
-    ('E4-2 clip_speed', True,     False),
-    ('E4-3 remove_y',   False,    True),
-    ('E4-4 clip+remove', True,    True),
+    ('baseline',     False,      False),
+    ('clip_speed',   True,       False),
+    ('remove_y',     False,      True),
+    ('clip+remove',  True,       True),
 ]
 
 
