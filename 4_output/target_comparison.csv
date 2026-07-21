@@ -1,0 +1,5 @@
+﻿target,n,best_corr_feat,best_|corr|,val_r2,test_r2
+ERA (평균자책),22408,strike_ratio,0.064,0.0006,0.0024
+FIP (수비무관자책),22408,avg_speed_Fastball,0.101,0.0093,0.0034
+xwOBA (기대가중출루율),22408,avg_speed_Fastball,0.105,0.0211,0.0043
+whiff% (헛스윙률),22408,avg_speed_Fastball,0.213,0.0934,0.0377
