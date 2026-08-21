@@ -449,7 +449,7 @@ def _aggregate_movement_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame
     return move.merge(loc, on=keys, how='outer')
 
 
-# ── Y 구간 wOBA 계산 ────────────────────────────────────────
+# ── Y 구간 whiff% 계산 ──────────────────────────────────────
 
 def _calc_y(con: duckdb.DuckDBPyConnection, mode: str, n: int, min_swings: int = 20) -> pd.DataFrame:
     """Y구간(X구간 이후) whiff% (헛스윙률) 계산.
@@ -527,6 +527,12 @@ def build_features(
     Parameters
     ----------
     include_delta    : delta feature(직전 시즌 대비 편차) 포함 여부.
+                       기본값 True는 의도적이다. 최종 모델 v2/v3/v4의 feature 목록
+                       (`4_output/final_feature_cols_v4.csv`)에 delta 15개가 실제로
+                       들어 있어, False로 두면 최종 모델이 재현되지 않는다.
+                       "delta 기각"(README)은 **추가로 넣자는 가설이 기각**됐다는
+                       뜻이지 기존 구성에서 빼기로 한 게 아니다
+                       (`4_output/delta_experiment_results.csv`: 차이 ≈ 0).
     include_acwr     : ACWR(최근 투구량) feature 포함 여부.
     include_movement : 무브먼트/회전축/제구 feature 포함 여부.
 
