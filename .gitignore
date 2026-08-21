@@ -13,11 +13,8 @@ CLAUDE.md
 00_노트북_지도.md
 MLB_pitcher_condition_prediction.md
 
-# 일정 관리 (포폴 무관)
-90_기획/MLB_pitcher_project_gantt.xlsx
-
-# 발표/간트 스크립트
-90_기획/create_gantt.py
+# 기획/일정/발표 스크립트 (포폴 무관, 로컬 전용)
+90_기획/
 
 # 참고논문 PDF 원본 (54MB, 저작권) — 요약 md는 유지
 98_참고논문/PDF/
@@ -31,6 +28,9 @@ _면접자료/
 # 실험 산출물 (버전별 모델/parquet — 대용량, 로컬 전용)
 v3_output/
 v4_output/
+
+# 로컬 보관 (내부 작업 문서)
+_보관/
 
 # 파이썬 캐시
 __pycache__/
