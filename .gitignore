@@ -4,8 +4,9 @@
 # 루트의 데이터/feature parquet (대용량, 드라이브에만 — starters_all은 267MB)
 *.parquet
 
-# 모델 저장 파일 (.pkl)
+# 모델 저장 파일 (.pkl) — 대용량, 4_output/models/ 에 모아둠
 4_output/**/*.pkl
+4_output/models/
 
 # 내부 작업 문서 (Claude 참고용, 로컬 전용)
 CLAUDE.md

@@ -101,10 +101,12 @@ def _pick(*candidates: Path) -> Path:
 FEATURE_DIR = _pick(DATA_ROOT / "4_features", ROOT)
 INTERIM_DIR = _pick(DATA_ROOT / "2_interim", ROOT)
 
-# 산출물
+# 산출물 — 4_output 하위를 성격별로 나눈다.
 OUTPUT_DIR = ROOT / "4_output"
-FIG_DIR = OUTPUT_DIR / "figures"
-MODEL_DIR = OUTPUT_DIR
+FIG_DIR = OUTPUT_DIR / "figures"        # 그림
+EXP_DIR = OUTPUT_DIR / "experiments"    # 실험 결과 (채택·기각 근거)
+FINAL_DIR = OUTPUT_DIR / "final"        # 최종 모델 관련 산출물
+MODEL_DIR = OUTPUT_DIR / "models"       # 학습된 모델 (.pkl, gitignore)
 
 TARGETS_PATH = DATA_ROOT / "game_targets.parquet"
 
@@ -116,7 +118,7 @@ BASE_DIR = DATA_ROOT
 IMAGE_DIR = OUTPUT_DIR / "final_images"
 STATCAST_GLOB = str(STATCAST_DIR / "statcast_*.parquet")
 
-for _d in (OUTPUT_DIR, FIG_DIR, IMAGE_DIR):
+for _d in (OUTPUT_DIR, FIG_DIR, EXP_DIR, FINAL_DIR, MODEL_DIR, IMAGE_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 
@@ -124,6 +126,19 @@ for _d in (OUTPUT_DIR, FIG_DIR, IMAGE_DIR):
 
 # 파일이 있을 수 있는 위치들. 환경마다 구조가 달라 순서대로 확인한다.
 _SEARCH_DIRS = [FEATURE_DIR, INTERIM_DIR, DATA_ROOT, ROOT, RAW_DIR]
+
+# 산출물 탐색 경로 — 하위 폴더로 옮기기 전 코드와의 호환을 위해
+# 옛 위치(4_output 직속)도 함께 확인한다.
+_OUTPUT_SEARCH = [EXP_DIR, FINAL_DIR, MODEL_DIR, FIG_DIR, OUTPUT_DIR]
+
+
+def find_output(filename: str) -> Path:
+    """산출물 파일을 4_output 하위에서 찾는다. 없으면 EXP_DIR 경로를 반환."""
+    for d in _OUTPUT_SEARCH:
+        p = d / filename
+        if p.exists():
+            return p
+    return EXP_DIR / filename
 
 
 def find_data(filename: str, required: bool = True) -> Path:
