@@ -19,11 +19,11 @@
     feat   = aggregate(angles, n_pitches=15, agg='full9')
 """
 
-import os
 import glob
+import os
+
 import numpy as np
 import pandas as pd
-
 
 # ── 관절/각도 상수 ──────────────────────────────────────────────
 JOINTS = ['ear', 'shoulder', 'elbow', 'wrist', 'hip', 'knee', 'ankle']

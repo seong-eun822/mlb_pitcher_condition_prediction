@@ -1,5 +1,8 @@
 # MLB 선발투수 컨디션 조기 예측
 
+[![CI](https://github.com/seong-eun822/mlb_pitcher_condition_prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/seong-eun822/mlb_pitcher_condition_prediction/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+
 ## 프로젝트 개요
 
 본 프로젝트는 **MLB 선발투수의 경기 초반 투구 데이터를 활용하여 그날 남은 경기의 컨디션(헛스윙 유도력)을 예측**하는 것을 목표로 합니다.
@@ -212,6 +215,15 @@ pip install -r requirements.txt
 ```
 
 정형 모델링만 재현할 경우 영상 관련 4개 패키지(opencv, mediapipe, ultralytics, scenedetect)는 설치하지 않아도 됩니다.
+
+### 코드 검사
+
+```bash
+pip install ruff
+ruff check .
+```
+
+`ruff.toml`에 컨벤션이 정의되어 있고, push·PR 시 GitHub Actions에서 자동 검사됩니다.
 
 ### 노트북 실행 순서
 

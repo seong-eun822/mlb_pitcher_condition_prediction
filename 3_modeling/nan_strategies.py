@@ -14,12 +14,11 @@ delta feature는 해당 구종을 안 던진 경기에 NaN이 생긴다. 이 NaN
 """
 
 import os
+
 import pandas as pd
-import numpy as np
 import xgboost as xgb
 from catboost import CatBoostRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-
 
 # ── 결측 처리 함수들 ────────────────────────────────────────
 

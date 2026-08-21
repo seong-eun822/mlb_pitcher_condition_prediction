@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: 코드 검사 (ruff)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: ruff 설치
+        run: pip install ruff
+
+      - name: 코드 컨벤션 검사
+        run: ruff check .
+
+  imports:
+    name: 모듈 import 검사
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # 무거운 의존성(mediapipe, ultralytics 등)은 설치하지 않는다.
+      # 모델링 모듈이 문법·import 수준에서 깨지지 않았는지만 확인하는 것이 목적.
+      - name: 최소 의존성 설치
+        run: pip install pandas numpy duckdb
+
+      - name: 문법 검사
+        run: |
+          python -m compileall -q 3_modeling/*.py 2_video/*.py
+
+      - name: 핵심 모듈 import
+        working-directory: 3_modeling
+        run: python -c "import feature_aggregator; print('feature_aggregator OK')"

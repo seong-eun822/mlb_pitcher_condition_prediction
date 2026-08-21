@@ -6,14 +6,14 @@ XGBoost / CatBoost / LightGBM으로 학습해 val 성능을 비교한다.
 """
 
 import os
+
+import lightgbm as lgb
 import pandas as pd
 import xgboost as xgb
 from catboost import CatBoostRegressor
-import lightgbm as lgb
 from sklearn.metrics import mean_squared_error, r2_score
 
 from feature_aggregator import build_and_save
-
 
 # ── 실험 조합 ───────────────────────────────────────────────
 
