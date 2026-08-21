@@ -111,6 +111,7 @@ BIO_DIR = FEATURE_DIR        # 영상 feature (같은 폴더)
 FEAT_DIR = FEATURE_DIR
 BASE_DIR = DATA_ROOT
 IMAGE_DIR = OUTPUT_DIR / "final_images"
+STATCAST_GLOB = str(STATCAST_DIR / "statcast_*.parquet")
 
 for _d in (OUTPUT_DIR, FIG_DIR, IMAGE_DIR):
     _d.mkdir(parents=True, exist_ok=True)
