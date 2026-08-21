@@ -1,5 +1,6 @@
 # 대용량 데이터 (statcast parquet, 좌표 CSV 380개 등) — 드라이브에만
-0_data/
+0_data/*
+!0_data/README.md
 
 # 루트의 데이터/feature parquet (대용량, 드라이브에만 — starters_all은 267MB)
 *.parquet
@@ -32,10 +33,6 @@ v4_output/
 
 # 로컬 보관 (내부 작업 문서)
 _보관/
-
-# 개인 학습 노트 (프로젝트 무관)
-git_개념정리.md
-git_실무_체크리스트.md
 
 # 개인 환경 설정 (데이터 경로 — 사람마다 다름)
 .env

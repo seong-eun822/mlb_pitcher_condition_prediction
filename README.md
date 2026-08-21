@@ -3,6 +3,28 @@
 [![CI](https://github.com/seong-eun822/mlb_pitcher_condition_prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/seong-eun822/mlb_pitcher_condition_prediction/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 
+경기 초반 15구만으로 그날 남은 경기의 투수 컨디션(헛스윙 유도력)을 예측합니다.
+투수가 **"누구인가"가 아니라 "오늘 어떤 상태인가"** 를 맞히는 문제로 정의했습니다.
+
+### 핵심 결과
+
+| | |
+|---|---|
+| **문제 재정의** | ERA → whiff%로 타겟 변경 — 구속과의 상관 3배(0.064→0.213), Val R² 150배 |
+| **최종 모델 (v4)** | 79 feature · Val R² 0.0918 · Test R² 0.0399 · 컨디션 분류 AUC 0.65 |
+| **최대 개선** | 무브먼트 feature 편입으로 Test R² +42% (100-seed 검증, p=3e-33) |
+
+### 본인 역할
+
+2인 팀 프로젝트. **정형 데이터 모델링 전담** + 영상 파이프라인 슬롯 0~2 담당.
+
+- 타겟 지표 재정의 및 예측 가능성 검증
+- Feature Engineering (무브먼트·회전축·ACWR 등 79개)
+- 모델링·튜닝·SHAP 해석, paired t-test 기반 가설 검증 전 과정
+- 영상 파이프라인 중 슬롯 0~2 수집·처리 (슬롯 3~4는 조원)
+
+---
+
 ## 프로젝트 개요
 
 본 프로젝트는 **MLB 선발투수의 경기 초반 투구 데이터를 활용하여 그날 남은 경기의 컨디션(헛스윙 유도력)을 예측**하는 것을 목표로 합니다.
@@ -284,4 +306,4 @@ Statcast 데이터는 `1_statcast/01_data_collection.ipynb`로 재수집할 수 
 
 ## 팀
 
-2인 팀 · 본인은 정형 모델링 전담 + 영상 파이프라인 슬롯 0~2 담당
+2인 팀 프로젝트입니다. 담당 범위는 상단 [본인 역할](#본인-역할)을 참고하세요.
