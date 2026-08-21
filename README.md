@@ -205,6 +205,35 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 └── 98_참고논문/             # 선행 연구 정리 (R² 천장 근거)
 ```
 
+## 실행 방법
+
+```bash
+pip install -r requirements.txt
+```
+
+정형 모델링만 재현할 경우 영상 관련 4개 패키지(opencv, mediapipe, ultralytics, scenedetect)는 설치하지 않아도 됩니다.
+
+### 노트북 실행 순서
+
+폴더·파일명의 번호가 곧 실행 순서입니다.
+
+| 순서 | 경로 | 내용 |
+|---|---|---|
+| 1 | `1_statcast/01 → 04` | 수집 → 전처리 → feature → 타겟 생성 |
+| 2 | `2_video/01 → 04` | 영상 다운로드 → 스켈레톤 → 각도 집계 *(선택, Colab GPU 권장)* |
+| 3 | `3_modeling/1_pipeline/` | baseline → X구간 → 튜닝 → 최종 평가 |
+| 4 | `3_modeling/3_analysis/` | SHAP 해석 · 컨디션 분류 |
+
+`3_modeling/2_experiments/`는 본류가 아닌 **검증 실험**입니다. 각 노트북 첫 셀에 결론과 기각 근거가 정리되어 있습니다.
+
+### 데이터
+
+원본 데이터(약 614MB)와 학습된 모델 파일은 용량 문제로 저장소에 포함하지 않았습니다.
+Statcast 데이터는 `1_statcast/01_data_collection.ipynb`로 재수집할 수 있습니다 (Baseball Savant, 2021~2025).
+
+> 노트북은 `IN_COLAB` 자동 감지로 Colab과 로컬 양쪽에서 동작합니다.
+> 영상 파이프라인은 GPU가 필요해 Colab 환경을 권장하고, 정형 모델링(XGBoost)은 로컬에서 실행 가능합니다.
+
 ## 기술 스택
 
 | 분류 | 사용 기술 |
