@@ -33,7 +33,11 @@ except ImportError:
 
 
 def _find_root() -> Path:
-    """requirements.txt가 있는 폴더를 프로젝트 루트로 본다."""
+    """이 파일이 있는 폴더를 루트로 본다. 실패 시 cwd에서 위로 탐색."""
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        pass
     here = Path.cwd()
     for cand in [here, *here.parents]:
         if (cand / "requirements.txt").exists():
@@ -45,10 +49,9 @@ def _find_root() -> Path:
 
 
 if IN_COLAB:
-    from google.colab import drive
-
-    drive.mount("/content/drive", force_remount=False)
-    ROOT = Path("/content/drive/MyDrive/투수 컨디션 예측 ML")
+    # 노트북 첫 셀이 이미 드라이브를 마운트하고 이 파일이 있는 폴더로
+    # 이동시켜 두었다. config.py의 실제 위치를 루트로 삼는다.
+    ROOT = Path(__file__).resolve().parent
 else:
     ROOT = _find_root()
 
