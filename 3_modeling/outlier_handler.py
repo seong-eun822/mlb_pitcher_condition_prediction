@@ -29,7 +29,17 @@ SPEED_COLS = [
 # ── 이상치 처리 함수들 ───────────────────────────────────────
 
 def clip_speed(df: pd.DataFrame, q_lo: float = 0.01, q_hi: float = 0.99) -> pd.DataFrame:
-    """구속 관련 X feature 상하 q% clip."""
+    """구속 관련 X feature 상하 q% clip.
+
+    ⚠️ 알려진 한계 — clip 경계를 train/val/test **전체**에서 계산한다.
+       엄밀하게는 train quantile로 경계를 잡고 val/test엔 적용만 해야 한다
+       (전처리 통계가 test를 보면 안 됨).
+
+       이 실험은 4개 전략 모두 baseline 대비 개선이 없어 **기각**됐고
+       최종 모델에 쓰이지 않으므로, 기록된 결과와의 일관성을 위해
+       코드를 그대로 둔다. 이 함수를 최종 파이프라인에 쓸 일이 생기면
+       반드시 train-only로 고칠 것.
+    """
     df = df.copy()
     for col in SPEED_COLS:
         if col not in df.columns:
