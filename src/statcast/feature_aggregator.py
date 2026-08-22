@@ -82,7 +82,11 @@ def _x_zone_sql(mode: str, n: int) -> str:
 
 # ── X feature 집계 ──────────────────────────────────────────
 
-def _aggregate_x_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+def _aggregate_x_features(
+    con: duckdb.DuckDBPyConnection,
+    include_trend: bool = True,
+    include_changepoint: bool = True,
+) -> pd.DataFrame:
     """x_zone 뷰로부터 경기 단위 feature DataFrame을 생성.
 
     구종그룹별 기본 통계(구속/회전수/릴리스/strike_ratio)에 추세·변화점을 병합한다.
@@ -138,13 +142,16 @@ def _aggregate_x_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
     features = game_features.merge(pivot, on=['game_pk', 'pitcher', 'season'], how='left')
 
-    # A. 경기 내 추세(전반 vs 후반 차이) feature 병합
-    trend = _aggregate_trend_features(con)
-    features = features.merge(trend, on=['game_pk', 'pitcher', 'season'], how='left')
+    # A. 경기 내 추세(전반 vs 후반 차이) — 14번 실험에서 기각됐으나
+    #    기존 실험 재현을 위해 기본 생성. 최종 모델은 이 컬럼을 선택하지 않는다.
+    if include_trend:
+        trend = _aggregate_trend_features(con)
+        features = features.merge(trend, on=['game_pk', 'pitcher', 'season'], how='left')
 
-    # D. 경기 내 변화점(changepoint) feature 병합
-    cp = _aggregate_changepoint_features(con)
-    features = features.merge(cp, on=['game_pk', 'pitcher', 'season'], how='left')
+    # D. 경기 내 변화점(changepoint) — 16번 실험에서 기각. 위와 동일.
+    if include_changepoint:
+        cp = _aggregate_changepoint_features(con)
+        features = features.merge(cp, on=['game_pk', 'pitcher', 'season'], how='left')
 
     return features
 
@@ -451,7 +458,7 @@ def _aggregate_movement_features(con: duckdb.DuckDBPyConnection) -> pd.DataFrame
 
 # ── Y 구간 whiff% 계산 ──────────────────────────────────────
 
-def _calc_y(con: duckdb.DuckDBPyConnection, mode: str, n: int, min_swings: int = 20) -> pd.DataFrame:
+def _calc_y(con: duckdb.DuckDBPyConnection, mode: str, n: int, min_swings: int = 5) -> pd.DataFrame:
     """Y구간(X구간 이후) whiff% (헛스윙률) 계산.
 
     whiff% = swinging_strike 수 / 전체 스윙 수
@@ -517,7 +524,9 @@ def build_features(
     mode: str,
     n: int,
     db_path: str = ':memory:',
-    min_y_ab: int = 5,
+    min_y_swings: int = 5,   # Y구간 최소 스윙 수 (분모 안정성)
+    include_trend: bool = True,
+    include_changepoint: bool = True,
     include_delta: bool = True,
     include_acwr: bool = True,
     include_movement: bool = True,
@@ -527,6 +536,9 @@ def build_features(
     Parameters
     ----------
     include_delta    : delta feature(직전 시즌 대비 편차) 포함 여부.
+    include_trend    : 경기 내 추세 feature. 14번 실험에서 기각됐으나
+                       기존 실험 재현을 위해 기본 생성한다.
+    include_changepoint : 변화점 feature. 16번 실험에서 기각. 위와 동일.
                        기본값 True는 의도적이다. 최종 모델 v2/v3/v4의 feature 목록
                        (`4_output/final_feature_cols_v4.csv`)에 delta 15개가 실제로
                        들어 있어, False로 두면 최종 모델이 재현되지 않는다.
@@ -553,7 +565,8 @@ def build_features(
     con.execute(f"CREATE OR REPLACE VIEW x_zone AS {_x_zone_sql(mode, n)}")
 
     # X feature 집계
-    features = _aggregate_x_features(con)
+    features = _aggregate_x_features(con, include_trend=include_trend,
+                                     include_changepoint=include_changepoint)
 
     # delta feature 병합 (include_delta=False면 절대값만 유지)
     if include_delta:
@@ -571,7 +584,7 @@ def build_features(
         features = features.merge(movement, on=['game_pk', 'pitcher', 'season'], how='left')
 
     # Y 계산
-    y_df = _calc_y(con, mode, n, min_swings=min_y_ab)
+    y_df = _calc_y(con, mode, n, min_swings=min_y_swings)
 
     # 병합
     final = features.merge(

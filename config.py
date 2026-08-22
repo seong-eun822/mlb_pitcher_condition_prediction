@@ -129,7 +129,8 @@ for _d in (OUTPUT_DIR, FIG_DIR, EXP_DIR, FINAL_DIR, MODEL_DIR, IMAGE_DIR):
 # src 패키지를 import 가능하게 (노트북에서 from statcast import ... 등)
 SRC_DIR = ROOT / "src"
 for _p in (str(ROOT), str(SRC_DIR), str(SRC_DIR / "statcast"),
-           str(SRC_DIR / "modeling"), str(SRC_DIR / "video")):
+           str(SRC_DIR / "modeling"), str(SRC_DIR / "video"),
+           str(SRC_DIR / "legacy")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

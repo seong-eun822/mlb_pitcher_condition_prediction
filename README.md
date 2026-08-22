@@ -67,7 +67,7 @@
 ```
 whiff% = swinging_strike 수 / 전체 스윙 수
 전체 스윙 = swinging_strike + swinging_strike_blocked + foul + foul_tip + hit_into_play
-- 스윙 20개 미만 경기 제외 (분모 안정성)
+- 스윙 5개 미만 경기 제외 (분모 안정성)
 ```
 
 ### 데이터 분할
