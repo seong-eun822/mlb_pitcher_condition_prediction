@@ -39,6 +39,7 @@ _보관/
 .env
 
 # 3D 포즈 실험 임시 산출물 (로컬 전용)
+test3d/
 test3d_*/
 batch_slot*.zip
 
