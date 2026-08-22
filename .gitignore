@@ -5,9 +5,23 @@ data/*
 # 루트의 데이터/feature parquet (대용량, 드라이브에만 — starters_all은 267MB)
 *.parquet
 
-# 모델 저장 파일 (.pkl) — 대용량, outputs/models/ 에 모아둠
-outputs/**/*.pkl
-outputs/models/
+# 산출물 — 재생성 가능하므로 저장소에는 최소한만 둔다.
+# README·실험기록이 인용하는 파일만 화이트리스트로 허용.
+outputs/*
+!outputs/experiments/
+outputs/experiments/*
+!outputs/experiments/experiment_results.md
+!outputs/final/
+outputs/final/*
+!outputs/final/movement_gap_results.md
+!outputs/final/best_params.json
+!outputs/final/final_feature_cols_v4.csv
+!outputs/figures/
+outputs/figures/*
+!outputs/figures/01_pred_vs_actual.png
+!outputs/figures/02_shap_beeswarm.png
+!outputs/figures/05_error_by_speed_type.png
+!outputs/figures/shap_bio_comparison.png
 
 # 내부 작업 문서 (Claude 참고용, 로컬 전용)
 CLAUDE.md
