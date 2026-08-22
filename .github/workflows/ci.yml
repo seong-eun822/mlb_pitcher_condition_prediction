@@ -47,4 +47,6 @@ jobs:
           python -m compileall -q src/ config.py
 
       - name: 핵심 모듈 import
-        run: python -c "import sys; sys.path.insert(0,'src/statcast'); import feature_aggregator; print('feature_aggregator OK')"
+        run: |
+          python -c "import sys; sys.path.insert(0,'src'); from statcast.feature_aggregator import build_features; print('statcast.feature_aggregator OK')"
+          python -c "import sys; sys.path.insert(0,'src'); import modeling.x_interval_experiment; print('modeling.x_interval_experiment OK')"

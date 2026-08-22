@@ -12,7 +12,10 @@ import xgboost as xgb
 from catboost import CatBoostRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-from feature_aggregator import build_and_save
+try:  # 패키지 경로 우선, config.py가 sys.path를 채운 환경도 지원
+    from statcast.feature_aggregator import build_and_save
+except ImportError:
+    from feature_aggregator import build_and_save
 
 # ── 실험 조합 ───────────────────────────────────────────────
 

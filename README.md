@@ -202,33 +202,45 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 ## 프로젝트 구조
 
 ```
-├── notebooks/1_statcast/              # 정형 데이터 파이프라인
-│   ├── 01_data_collection      # Baseball Savant 수집 (2021~2025)
-│   ├── 02_preprocessing        # 선발투수 필터 · 구종 그룹핑
-│   ├── 03_feature_engineering  # X구간 집계 → feature 생성
-│   └── 04_build_targets        # 타겟 지표 생성
+├── notebooks/               # 실행 순서 = 폴더·파일 번호
+│   ├── 1_statcast/          정형 데이터 파이프라인
+│   │   └── 01_data_collection → 02_preprocessing
+│   │       → 03_feature_engineering → 04_build_targets
+│   ├── 2_video/             영상 생체역학 파이프라인
+│   │   └── 01_video_download → 02_video_collect
+│   │       → 03_skeleton → 04_video_pipeline
+│   ├── 3_modeling/
+│   │   ├── 1_pipeline/      최종 모델로 이어지는 본류
+│   │   │                    04_baseline · 06_x_interval · 07_delta
+│   │   │                    10_tuning · 11_feature_selection · 13_final_evaluation
+│   │   ├── 2_experiments/   검증 실험 (결측·이상치·영상·시퀀스·changepoint)
+│   │   └── 3_analysis/      SHAP · 타겟 비교 · 컨디션 분류
+│   └── 4_eda/               타겟 분포 EDA
 │
-├── notebooks/2_video/                 # 영상 생체역학 파이프라인
-│   ├── 01_video_download       # 투구 클립 다운로드 (5슬롯 분할)
-│   ├── 02_video_collect        # play_id 크롤링 (+ 크롤링 검증)
-│   ├── 03_skeleton             # 컷분할 → 투수 검출 → 릴리스 → MediaPipe
-│   ├── 04_video_pipeline       # 좌표 → 각도 → 경기 집계
-│   └── video_features.py       # 파이프라인 로직 모듈화
+├── src/                     재사용 모듈
+│   ├── statcast/            feature_aggregator.py  (X구간 feature 집계, 핵심)
+│   ├── modeling/            x_interval_experiment.py
+│   ├── video/               video_features.py      (영상 파이프라인 로직)
+│   └── legacy/              nan_strategies.py · outlier_handler.py
+│                            (기각된 실험 기록용 — src/legacy/README.md 참조)
 │
-├── notebooks/3_modeling/
-│   ├── 1_pipeline/          # 최종 모델로 이어지는 본류
-│   │   ├── 04_baseline · 06_x_interval · 07_delta
-│   │   ├── 10_tuning · 11_feature_selection · 13_final_evaluation
-│   ├── 2_experiments/      # 검증 실험 (결측·이상치·영상·시퀀스·changepoint)
-│   ├── 3_analysis/         # SHAP · 타겟 비교 · 컨디션 분류
-│   ├── feature_aggregator.py   # X구간별 feature 집계 (핵심 모듈)
-│   ├── x_interval_experiment.py
-│   ├── nan_strategies.py / outlier_handler.py
+├── outputs/
+│   ├── experiments/         실험 결과 CSV·JSON (채택·기각 근거)
+│   ├── final/               최종 모델 산출물
+│   ├── models/              학습된 모델 (.pkl, 저장소 미포함)
+│   └── figures/             시각화
 │
-├── outputs/               # 실험 결과 CSV · 모델 · 시각화(figures/)
-├── 4_eda/                  # 타겟 분포 EDA
-└── docs/references/             # 선행 연구 정리 (R² 천장 근거)
+├── data/                    저장소 미포함 — data/README.md 참조
+│   ├── raw/                 Baseball Savant 원본 (불변)
+│   ├── interim/             중간 산출물
+│   └── video_batches/       영상 배치 처리 결과
+│
+├── docs/references/         선행 연구 정리 (R² 천장 근거)
+└── config.py                경로 설정 (Colab/로컬 자동 감지)
 ```
+
+노트북 번호는 프로젝트 전체 통산이라 폴더 안에서 건너뜁니다.
+자세한 설명은 [notebooks/3_modeling/README.md](notebooks/3_modeling/README.md) 참조.
 
 ## 실행 방법
 
@@ -253,12 +265,12 @@ ruff check .
 
 | 순서 | 경로 | 내용 |
 |---|---|---|
-| 1 | `1_statcast/01 → 04` | 수집 → 전처리 → feature → 타겟 생성 |
-| 2 | `2_video/01 → 04` | 영상 다운로드 → 스켈레톤 → 각도 집계 *(선택, Colab GPU 권장)* |
-| 3 | `3_modeling/1_pipeline/` | baseline → X구간 → 튜닝 → 최종 평가 |
-| 4 | `3_modeling/3_analysis/` | SHAP 해석 · 컨디션 분류 |
+| 1 | `notebooks/1_statcast/01 → 04` | 수집 → 전처리 → feature → 타겟 생성 |
+| 2 | `notebooks/2_video/01 → 04` | 영상 다운로드 → 스켈레톤 → 각도 집계 *(선택, Colab GPU 권장)* |
+| 3 | `notebooks/3_modeling/1_pipeline/` | baseline → X구간 → 튜닝 → 최종 평가 |
+| 4 | `notebooks/3_modeling/3_analysis/` | SHAP 해석 · 컨디션 분류 |
 
-`3_modeling/2_experiments/`는 본류가 아닌 **검증 실험**입니다. 각 노트북 첫 셀에 결론과 기각 근거가 정리되어 있습니다.
+`notebooks/3_modeling/2_experiments/`는 본류가 아닌 **검증 실험**입니다. 각 노트북 첫 셀에 결론과 기각 근거가 정리되어 있습니다.
 
 ### 데이터 경로 설정
 
@@ -276,7 +288,7 @@ cp .env.example .env
 ### 데이터
 
 원본 데이터(약 614MB)와 학습된 모델 파일은 용량 문제로 저장소에 포함하지 않았습니다.
-Statcast 데이터는 `1_statcast/01_data_collection.ipynb`로 재수집할 수 있습니다 (Baseball Savant, 2021~2025).
+Statcast 데이터는 `notebooks/1_statcast/01_data_collection.ipynb`로 재수집할 수 있습니다 (Baseball Savant, 2021~2025).
 
 > 노트북은 `IN_COLAB` 자동 감지로 Colab과 로컬 양쪽에서 동작합니다.
 > 영상 파이프라인은 GPU가 필요해 Colab 환경을 권장하고, 정형 모델링(XGBoost)은 로컬에서 실행 가능합니다.

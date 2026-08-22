@@ -14,26 +14,29 @@
 
 ```
 data/
-├── statcast/     Baseball Savant 원본 (statcast_2021~2025.parquet)  ← 불변
-├── data/         크롤링 결과, 관절 좌표·각도 CSV
-├── output/       영상 배치 처리 산출물 (슬롯별 coords/cuts)
-└── 4_features/   모델 입력 feature (환경에 따라 루트에 있을 수 있음)
+├── raw/            Baseball Savant 원본 (statcast_2021~2025.parquet)  ← 불변
+├── interim/        크롤링 결과, 관절 좌표·각도 CSV
+├── video_batches/  영상 배치 처리 산출물 (슬롯별 coords/cuts)
+└── processed/      모델 입력 feature (환경에 따라 위치가 다를 수 있음)
 ```
 
-`statcast/`는 **원본이므로 수정하지 않습니다.** 모든 가공 결과는 별도 파일로 저장합니다.
+`raw/`는 **원본이므로 수정하지 않습니다.** 모든 가공 결과는 별도 파일로 저장합니다.
+
+경로는 [`config.py`](../config.py)가 관리하며, `processed/`가 없으면
+프로젝트 루트에서 feature 파일을 찾습니다 (`find_data()`).
 
 ## 어떻게 얻나
 
 ### 1. 직접 수집 (누구나 가능)
 
 ```
-1_statcast/01_data_collection.ipynb   → statcast/ 생성 (시즌당 수십 분)
-1_statcast/02_preprocessing.ipynb     → 선발투수 필터링
-1_statcast/03_feature_engineering.ipynb → feature 생성
-1_statcast/04_build_targets.ipynb     → 타겟 생성
+notebooks/1_statcast/01_data_collection.ipynb   → raw/ 생성 (시즌당 수십 분)
+notebooks/1_statcast/02_preprocessing.ipynb     → 선발투수 필터링
+notebooks/1_statcast/03_feature_engineering.ipynb → feature 생성
+notebooks/1_statcast/04_build_targets.ipynb     → 타겟 생성
 ```
 
-영상 파이프라인(`2_video/`)은 GPU가 필요해 Colab 환경을 권장합니다.
+영상 파이프라인(`notebooks/2_video/`)은 GPU가 필요해 Colab 환경을 권장합니다.
 
 ### 2. 팀원 — 드라이브 공유
 
@@ -41,7 +44,7 @@ data/
 
 ```bash
 cp .env.example .env
-# .env 에 PITCHER_DATA_ROOT=<0_data 경로> 지정
+# .env 에 PITCHER_DATA_ROOT=<data 폴더 경로> 지정
 ```
 
 경로 처리는 [`config.py`](../config.py)가 담당하며, Colab과 로컬을 자동으로 감지합니다.
