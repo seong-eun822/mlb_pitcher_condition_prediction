@@ -107,7 +107,7 @@ ERA→whiff%로 갈수록 상관이 **약 3배(0.064→0.213)**, Val R²가 **15
 
 <img src="outputs/figures/01_pred_vs_actual.png" width="680">
 
-> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([docs/references/08](docs/references/08_target_metrics.md) 참조)
+> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([docs/참고논문/04_타겟지표](docs/참고논문/04_타겟지표/08_target_metrics.md) 참조)
 
 ### 3. 무브먼트 feature — 최대 성능 개선
 
@@ -235,7 +235,7 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 │   ├── interim/             중간 산출물
 │   └── video_batches/       영상 배치 처리 결과
 │
-├── docs/references/         선행 연구 정리 (R² 천장 근거)
+├── docs/참고논문/           선행 연구 정리 (주제별, R² 천장 근거)
 └── config.py                경로 설정 (Colab/로컬 자동 감지)
 ```
 
