@@ -44,8 +44,7 @@ jobs:
 
       - name: 문법 검사
         run: |
-          python -m compileall -q 3_modeling/*.py 2_video/*.py
+          python -m compileall -q src/ config.py
 
       - name: 핵심 모듈 import
-        working-directory: 3_modeling
-        run: python -c "import feature_aggregator; print('feature_aggregator OK')"
+        run: python -c "import sys; sys.path.insert(0,'src/statcast'); import feature_aggregator; print('feature_aggregator OK')"

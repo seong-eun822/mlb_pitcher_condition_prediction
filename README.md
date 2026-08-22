@@ -105,9 +105,9 @@ ERA→whiff%로 갈수록 상관이 **약 3배(0.064→0.213)**, Val R²가 **15
 | **Test R²** | **0.0399** |
 | 컨디션 이진분류 Test AUC | 0.65 |
 
-<img src="4_output/figures/01_pred_vs_actual.png" width="680">
+<img src="outputs/figures/01_pred_vs_actual.png" width="680">
 
-> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([98_참고논문/08](98_참고논문/08_추가수집_타겟평가지표.md) 참조)
+> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([docs/references/08](docs/references/08_추가수집_타겟평가지표.md) 참조)
 
 ### 3. 무브먼트 feature — 최대 성능 개선
 
@@ -121,7 +121,7 @@ ERA→whiff%로 갈수록 상관이 **약 3배(0.064→0.213)**, Val R²가 **15
 
 100-seed paired t-test로 재현성·회귀·분류를 전부 통과한, 프로젝트 전체 최대 개선입니다.
 
-**무브먼트 gap — 쪼개기 vs 차이**: v3의 무브먼트는 구종 3그룹 *평균*이라, 그룹 안에서 정보가 뭉개집니다. 이를 복원하는 방법으로 "구종을 더 잘게 쪼개기"(직구 3종·8구종)와 "구종 간 차이(gap, 직구−변화구 무브먼트)"를 비교했는데, **쪼개기는 표본 손실로 재현성에 실패하고 gap만 통과**했습니다. gap은 안정적인 두 그룹 평균의 차이라 표본 손실 없이 "구종 간 궤적 대비"라는 새 정보를 더합니다 — 헛스윙은 "직구인 줄 알고 스윙했는데 변화구가 와서" 나오므로, 궤적 차이가 클수록 유인력이 높아집니다. ([4_output/final/movement_gap_results.md](4_output/final/movement_gap_results.md) 참조)
+**무브먼트 gap — 쪼개기 vs 차이**: v3의 무브먼트는 구종 3그룹 *평균*이라, 그룹 안에서 정보가 뭉개집니다. 이를 복원하는 방법으로 "구종을 더 잘게 쪼개기"(직구 3종·8구종)와 "구종 간 차이(gap, 직구−변화구 무브먼트)"를 비교했는데, **쪼개기는 표본 손실로 재현성에 실패하고 gap만 통과**했습니다. gap은 안정적인 두 그룹 평균의 차이라 표본 손실 없이 "구종 간 궤적 대비"라는 새 정보를 더합니다 — 헛스윙은 "직구인 줄 알고 스윙했는데 변화구가 와서" 나오므로, 궤적 차이가 클수록 유인력이 높아집니다. ([outputs/final/movement_gap_results.md](outputs/final/movement_gap_results.md) 참조)
 
 ### 4. 컨디션 이진 분류 — 실용화
 
@@ -133,7 +133,7 @@ ERA→whiff%로 갈수록 상관이 **약 3배(0.064→0.213)**, Val R²가 **15
 
 ### 5. SHAP — 컨디션의 정체
 
-<img src="4_output/figures/02_shap_beeswarm.png" width="600">
+<img src="outputs/figures/02_shap_beeswarm.png" width="600">
 
 **컨디션 신호 Top 5**: 평균 구속 · 구속 변동성(std) · 회전수 · 평소 대비 기준선(prev) · 릴리스 포인트
 → 컨디션 = 절대 구속·회전수 + 얼마나 일정한가(변동성) + 평소 대비 어떤가
@@ -180,7 +180,7 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 >
 > ℹ️ **"기각"의 의미**: 위 표의 기각은 **"그 방향으로 더 밀고 나가자는 가설"이 기각**됐다는 뜻입니다. 예를 들어 delta는 이미 기본 feature 구성에 15개가 들어 있고 최종 모델(79)에도 그대로 남아 있습니다 — 검증 결과 추가 강화가 무의미했을 뿐, 빼기로 한 것이 아닙니다. 반면 영상 생체역학은 최종 모델에서 **실제로 제외**됐습니다.
 
-<img src="4_output/figures/shap_bio_comparison.png" width="680">
+<img src="outputs/figures/shap_bio_comparison.png" width="680">
 
 > 좌: SHAP Top 30 (파랑=정형, 주황=영상) — 영상 feature는 11위부터 등장. 우: feature 그룹별 평균 |SHAP| — 정형(0.00070)이 영상(0.00032)의 2배 이상.
 
@@ -190,7 +190,7 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 
 평균 R²만 보지 않고, 어떤 투수에게 신뢰할 수 있는지 유형별로 쪼개 확인했습니다.
 
-<img src="4_output/figures/05_error_by_speed_type.png" width="600">
+<img src="outputs/figures/05_error_by_speed_type.png" width="600">
 
 | 투수 유형 | Test R² | 분류 AUC | 해석 |
 |---|---|---|---|
@@ -202,20 +202,20 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 ## 프로젝트 구조
 
 ```
-├── 1_statcast/              # 정형 데이터 파이프라인
+├── notebooks/1_statcast/              # 정형 데이터 파이프라인
 │   ├── 01_data_collection      # Baseball Savant 수집 (2021~2025)
 │   ├── 02_preprocessing        # 선발투수 필터 · 구종 그룹핑
 │   ├── 03_feature_engineering  # X구간 집계 → feature 생성
 │   └── 04_build_targets        # 타겟 지표 생성
 │
-├── 2_video/                 # 영상 생체역학 파이프라인
+├── notebooks/2_video/                 # 영상 생체역학 파이프라인
 │   ├── 01_video_download       # 투구 클립 다운로드 (5슬롯 분할)
 │   ├── 02_video_collect        # play_id 크롤링 (+ 크롤링 검증)
 │   ├── 03_skeleton             # 컷분할 → 투수 검출 → 릴리스 → MediaPipe
 │   ├── 04_video_pipeline       # 좌표 → 각도 → 경기 집계
 │   └── video_features.py       # 파이프라인 로직 모듈화
 │
-├── 3_modeling/
+├── notebooks/3_modeling/
 │   ├── 1_pipeline/          # 최종 모델로 이어지는 본류
 │   │   ├── 04_baseline · 06_x_interval · 07_delta
 │   │   ├── 10_tuning · 11_feature_selection · 13_final_evaluation
@@ -225,9 +225,9 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 │   ├── x_interval_experiment.py
 │   ├── nan_strategies.py / outlier_handler.py
 │
-├── 4_output/               # 실험 결과 CSV · 모델 · 시각화(figures/)
+├── outputs/               # 실험 결과 CSV · 모델 · 시각화(figures/)
 ├── 5_eda/                  # 타겟 분포 EDA
-└── 98_참고논문/             # 선행 연구 정리 (R² 천장 근거)
+└── docs/references/             # 선행 연구 정리 (R² 천장 근거)
 ```
 
 ## 실행 방법
@@ -262,7 +262,7 @@ ruff check .
 
 ### 데이터 경로 설정
 
-노트북은 Colab과 로컬을 자동으로 감지합니다. 데이터가 프로젝트 루트의 `0_data/`가
+노트북은 Colab과 로컬을 자동으로 감지합니다. 데이터가 프로젝트 루트의 `data/`가
 아닌 다른 곳에 있다면 `.env`로 위치를 지정하세요.
 
 ```bash

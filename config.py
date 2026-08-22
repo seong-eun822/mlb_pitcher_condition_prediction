@@ -20,6 +20,7 @@ Colab 드라이브는 `0_data/4_features/`, 로컬은 루트에 parquet이 흩�
 """
 
 import os
+import sys
 from pathlib import Path
 
 # ── 1층: 실행 환경과 코드 루트 ────────────────────────────────
@@ -75,15 +76,15 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 # 우선순위: 환경변수 > .env > 기본값(ROOT/0_data)
-DATA_ROOT = Path(os.environ.get("PITCHER_DATA_ROOT", ROOT / "0_data"))
+DATA_ROOT = Path(os.environ.get("PITCHER_DATA_ROOT", ROOT / "data"))
 
 
 # ── 경로 정의 ────────────────────────────────────────────────
 
 # 원본
-STATCAST_DIR = DATA_ROOT / "statcast"          # statcast_2021~2025.parquet
-RAW_DIR = DATA_ROOT / "data"                   # 크롤링 csv, 좌표/각도
-VIDEO_OUT_DIR = DATA_ROOT / "output"           # 영상 배치 산출물
+STATCAST_DIR = DATA_ROOT / "raw"               # statcast_2021~2025.parquet (원본, 불변)
+RAW_DIR = DATA_ROOT / "interim"                # 크롤링 csv, 좌표/각도
+VIDEO_OUT_DIR = DATA_ROOT / "video_batches"    # 영상 배치 산출물
 
 # 가공 — 환경마다 위치가 다르다.
 # Colab 드라이브는 `0_data/4_features/`에 모아두었지만, 로컬은 프로젝트
@@ -98,11 +99,11 @@ def _pick(*candidates: Path) -> Path:
     return candidates[0]
 
 
-FEATURE_DIR = _pick(DATA_ROOT / "4_features", ROOT)
-INTERIM_DIR = _pick(DATA_ROOT / "2_interim", ROOT)
+FEATURE_DIR = _pick(DATA_ROOT / "processed", DATA_ROOT / "4_features", ROOT)
+INTERIM_DIR = _pick(DATA_ROOT / "interim", DATA_ROOT / "2_interim", ROOT)
 
 # 산출물 — 4_output 하위를 성격별로 나눈다.
-OUTPUT_DIR = ROOT / "4_output"
+OUTPUT_DIR = ROOT / "outputs"
 FIG_DIR = OUTPUT_DIR / "figures"        # 그림
 EXP_DIR = OUTPUT_DIR / "experiments"    # 실험 결과 (채택·기각 근거)
 FINAL_DIR = OUTPUT_DIR / "final"        # 최종 모델 관련 산출물
@@ -125,6 +126,13 @@ for _d in (OUTPUT_DIR, FIG_DIR, EXP_DIR, FINAL_DIR, MODEL_DIR, IMAGE_DIR):
 # ── 데이터 파일 탐색 ──────────────────────────────────────────
 
 # 파일이 있을 수 있는 위치들. 환경마다 구조가 달라 순서대로 확인한다.
+# src 패키지를 import 가능하게 (노트북에서 from statcast import ... 등)
+SRC_DIR = ROOT / "src"
+for _p in (str(ROOT), str(SRC_DIR), str(SRC_DIR / "statcast"),
+           str(SRC_DIR / "modeling"), str(SRC_DIR / "video")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 _SEARCH_DIRS = [FEATURE_DIR, INTERIM_DIR, DATA_ROOT, ROOT, RAW_DIR]
 
 # 산출물 탐색 경로 — 하위 폴더로 옮기기 전 코드와의 호환을 위해
