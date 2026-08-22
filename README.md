@@ -107,7 +107,7 @@ ERA→whiff%로 갈수록 상관이 **약 3배(0.064→0.213)**, Val R²가 **15
 
 <img src="outputs/figures/01_pred_vs_actual.png" width="680">
 
-> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([docs/references/08](docs/references/08_추가수집_타겟평가지표.md) 참조)
+> R²가 낮아 보이지만, 선행 연구에서도 구속으로 ERA를 예측하면 R² ≈ 0.05~0.08, 최고 지표 SIERA조차 다음 시즌 ERA의 20%만 설명합니다. 경기 단위 + 초반 15구라는 훨씬 어려운 조건에서 Val R² 0.09는 **문제의 천장에 근접한 값**입니다. ([docs/references/08](docs/references/08_target_metrics.md) 참조)
 
 ### 3. 무브먼트 feature — 최대 성능 개선
 
@@ -154,8 +154,8 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 ```
 
 <p float="left">
-  <img src="2_video/image/01_release_detection_failure.png" width="370">
-  <img src="2_video/image/02_release_detection_success.png" width="370">
+  <img src="notebooks/2_video/figures/01_release_detection_failure.png" width="370">
+  <img src="notebooks/2_video/figures/02_release_detection_success.png" width="370">
 </p>
 
 > 좌: 검출 실패 — 움직임이 큰 타자를 투수로 오인. 우: 검출 성공 — 투구 동작 중인 투수를 특정해 릴리스 순간(빨간 점)까지 포착. 오검출 필터링이 파이프라인의 핵심 작업이었습니다.
@@ -226,7 +226,7 @@ Statcast는 "공의 결과"(구속·회전수)는 정밀하게 담지만 **투�
 │   ├── nan_strategies.py / outlier_handler.py
 │
 ├── outputs/               # 실험 결과 CSV · 모델 · 시각화(figures/)
-├── 5_eda/                  # 타겟 분포 EDA
+├── 4_eda/                  # 타겟 분포 EDA
 └── docs/references/             # 선행 연구 정리 (R² 천장 근거)
 ```
 

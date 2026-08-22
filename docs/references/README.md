@@ -18,7 +18,7 @@
 | 스포츠 Analytics 방법론 | [05_sports_analytics.md](05_sports_analytics.md) | 3편 |
 | 국내(한국어) 논문 | [06_korean_papers.md](06_korean_papers.md) | 3편 |
 
-### 2차 수집 (33편) — [07_추가수집_2차.md](07_추가수집_2차.md)
+### 2차 수집 (33편) — [07_additional_papers.md](07_additional_papers.md)
 
 | 카테고리 | 주제 | 논문 수 |
 |---|---|---|
